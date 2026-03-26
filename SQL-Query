@@ -18,3 +18,4 @@ def print_cars():
 
 if __name__ == '__main__':
     print_cars()
+    print('hello world')

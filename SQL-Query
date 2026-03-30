@@ -15,28 +15,54 @@ def execute_query(query, params=()):
         cursor.execute(query, params)
         #fetch results
         results = cursor.fetchall()
-        #get headers to print on top of data
+        #check for no results
+        if not results:
+            print("\nNo cars found matching that criteria.")
+            return
         headers = results[0].keys()
-        print(" | ".join(headers))
-        print("-" * 30)
+        #get headers to print on top of data
+        column_width = 20
+        print(" | ".join(name.ljust(column_width) for name in headers))
+        print("-" * (column_width * len(headers)))
         #print data
         for row in results:
-            print(" | ".join(str(row[column]) for column in headers))
-
+            print(" | ".join(str(row[column]).ljust(column_width) for column in headers))
 
 
 def user_search():
-    # Ensure these match your actual SQLite table columns
-    allowed = ['car_name', 'top_speed']
-    
-    column = input(f"Filter by which column ({'/'.join(allowed)})? ").lower()
-    
-    if column not in allowed:
-        print(f"Invalid column! Please choose from: {', '.join(allowed)}")
-        return
+    #create dictionary with questions for each column
+    search_fields = {"car_name": "Car name",
+                     "top_speed": "Top speed",
+                     "manufacturer": "Manufacturer name",
+                     "release_year": "Release year"}
+    query = "SELECT * FROM cars WHERE 1=1"
+    params = []
+    print("Search Filters (Leave blank to skip)")
+    for col, label in search_fields.items():
+        # Handle text-based search for names and manufacturers
+        if col in ["car_name", "manufacturer"]:
+            val = input(f"{label} (contains): ").strip()
+            if val:
+                query += f" AND {col} LIKE ?"
+                params.append(f"%{val}%")
+        
+        # Handle numerical range search for Speed and Year
+        else:
+            val = input(f"Enter {label} value: ").strip()
+            if val:
+                print(f"Match {label}: [1] Exactly  [2] Greater Than  [3] Less Than")
+                choice = input("Select (1/2/3): ")
+                
+                # give user choice of operator
+                operators = {"1": "=", "2": ">=", "3": "<="}
+                op = operators.get(choice, "=") # default is equals
+                
+                query += f" AND {col} {op} ?"
+                params.append(val)
+    if "top_speed" in query:
+        query += " ORDER BY top_speed DESC"
+    # Convert list to tuple for sqlite3
+    execute_query(query, tuple(params))
 
-    value = input(f"Enter the value for {column}: ")
-
-    #placeholder for the value (safe from injection)
-    query = f"SELECT * FROM cars WHERE {column} = ?"
-    execute_query(query, (value,))
+if __name__ == "__main__":
+    user_search()

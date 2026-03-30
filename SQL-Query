@@ -2,20 +2,41 @@
 
 import sqlite3
 
+#open file
 DATABASE = "cars.db"
 
-def print_cars():
-    speed = input("What speed: ")
-    with sqlite3.connect(DATABASE) as db:
-        cursor = db.cursor()
-        sql = "SELECT * FROM cars WHERE top_speed > ?;"
-        cursor.execute(sql, (speed,))
-        results = cursor.fetchall()
-        
-        for car in results:
-            print(f"Cars with top speed above {speed}")
-            print(f"Car Name: {car[1]}; Top Speed: {car[2]}")
 
-if __name__ == '__main__':
-    print_cars()
-    print('hello world')
+def execute_query(query, params=()):
+    with sqlite3.connect(DATABASE) as db:
+        #access columns by name, changing tuples into a dictionary type data
+        db.row_factory = sqlite3.Row
+        #initiate cursor, separates query from parameters
+        cursor = db.cursor()
+        cursor.execute(query, params)
+        #fetch results
+        results = cursor.fetchall()
+        #get headers to print on top of data
+        headers = results[0].keys()
+        print(" | ".join(headers))
+        print("-" * 30)
+        #print data
+        for row in results:
+            print(" | ".join(str(row[column]) for column in headers))
+
+
+
+def user_search():
+    # Ensure these match your actual SQLite table columns
+    allowed = ['car_name', 'top_speed']
+    
+    column = input(f"Filter by which column ({'/'.join(allowed)})? ").lower()
+    
+    if column not in allowed:
+        print(f"Invalid column! Please choose from: {', '.join(allowed)}")
+        return
+
+    value = input(f"Enter the value for {column}: ")
+
+    #placeholder for the value (safe from injection)
+    query = f"SELECT * FROM cars WHERE {column} = ?"
+    execute_query(query, (value,))
